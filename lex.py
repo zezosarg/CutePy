@@ -14,3 +14,6 @@ class Lex:
 
     #def next_token():
     
+
+lex = Lex(1, "lol.cpy", token)
+print(lex)

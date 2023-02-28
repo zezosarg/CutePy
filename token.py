@@ -5,5 +5,8 @@ class Token:
         self.family = family
         self.line_number = line_number
 
-    def __str__():
-        return  str(self.family) + ', ' + str(self.line_number) + ', ' + str(self.recognized_string)
+    def __str__(self):
+        return str(self.recognized_string) + '\tfamily:\"' + str(self.family) + '\",  line: ' + str(self.line_number)
+
+token = Token(")", "groupSymbol", 11)
+print(str(token))
