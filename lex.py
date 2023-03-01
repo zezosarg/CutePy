@@ -11,33 +11,39 @@ class Lex:
 
     #def error():
 
-    def next_token():
+    def next_token(self):
         buffer = ""
         state = "start"
         family = None
         
         while family == None and state != "error":
-            input = file_name.read(1)
+            input = self.file_name.read(1)
 
             if input == '\n':
-                current_line += 1
+                self.current_line += 1
             elif input.isspace():
-                #do nothing         
+                continue
             #alphanumeric
             elif (state == "start" or state == "dig") and input.isdigit():
                 buffer += input
                 state = "dig"
+            elif state == "dig" and input.isalpha():
+                state == "error"
             elif state == "dig" and not input.isdigit():
-                unget()
+                self.file_name.seek(self.file_name.tell() - 1)
+                if abs(int(input)) > 4294967295:
+                    state == "error"
                 family = "number"
             elif state == "start" and input.isalpha():
                 buffer += input
                 state = "idk"
-            elif state == "idk" and (input.isalpha() or input.isdigit()):
+            elif state == "idk" and (input.isalpha() or input.isdigit() or input == '_'):
                 buffer += input
                 state = "idk"
             elif state == "idk" and not (input.isalpha() or input.isdigit()):
-                unget()
+                self.file_name.seek(self.file_name.tell() - 1)
+                if len(buffer) > 30:
+                    state == "error"
                 family = "identifierOrKeyword"
             #symbols
             elif state == "start" and input in ['{', '}', '(', ')', '[', ']']:
@@ -63,7 +69,7 @@ class Lex:
                 buffer += input
                 state = "equal"
             elif state == "equal" and input != '=':
-                unget()
+                self.file_name.seek(self.file_name.tell() - 1)
                 family = "assignment"
             elif state == "equal" and input == '=':
                 buffer += input
@@ -75,7 +81,7 @@ class Lex:
                 buffer += input
                 family = "relOperator"
             elif state == "smaller" and input not in ['>', '=']:
-                unget()
+                self.file_name.seek(self.file_name.tell() - 1)
                 family = "relOperator"
             elif state == "start" and input == '>':
                 buffer += input
@@ -84,24 +90,28 @@ class Lex:
                 buffer += input
                 family = "relOperator"
             elif state == "larger" and input != '=':
-                unget()
+                self.file_name.seek(self.file_name.tell() - 1)
                 family = "relOperator"
             #comments
             elif state == "start" and input == '#':
                 state = "inSharp"
             elif state == "inSharp" and input == '$':
                 state = "rem"
+            elif state == "rem" and input == '':
+                state = "error"
             elif state == "rem" and input == '#':
                 state == "outSharp"
             elif state == "outSharp" and input == '$':
                 state = "start"    
-            #errors
-            
+            else:
+                state = "error" 
 
-        return Token(buffer, family, current_line)
-            
-    def unget():
-        file_name.seek(file_name.tell() - 1)
+        return Token(buffer, family, self.current_line)
 
-#lex = Lex(1, "lol.cpy", token)
-#print(lex)
+f = open("factorial.cpy", "r")
+
+l = Lex(0, f, None)
+
+print(l.next_token())
+
+f.close()
