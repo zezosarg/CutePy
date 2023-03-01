@@ -39,6 +39,13 @@ class Lex:
             elif state == "idk" and not (input.isalpha() or input.isdigit()):
                 unget()
                 family = "identifierOrKeyword"
+            #symbols
+            elif state == "start" and input in ['{', '}', '(', ')', '[', ']']:
+                buffer += input
+                family = "groupSymbol"
+            elif state == "start" and input in [',', ';', '.']:
+                buffer += input
+                family = "delimeter"
             #operators
             elif state == "start" and input in ['+', '-']:
                 buffer += input
@@ -79,13 +86,6 @@ class Lex:
             elif state == "larger" and input != '=':
                 unget()
                 family = "relOperator"
-            #symbols
-            elif state == "start" and input in ['{', '}', '(', ')', '[', ']']:
-                buffer += input
-                family = "groupSymbol"
-            elif state == "start" and input in [',', ';', '.']:
-                buffer += input
-                family = "delimeter"
             #comments
             elif state == "start" and input == '#':
                 state = "inSharp"
@@ -95,6 +95,8 @@ class Lex:
                 state == "outSharp"
             elif state == "outSharp" and input == '$':
                 state = "start"    
+            #errors
+            
 
         return Token(buffer, family, current_line)
             
