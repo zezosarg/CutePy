@@ -20,7 +20,10 @@ class Lex:
             input = file_name.read(1)
 
             if input == '\n':
-                current_line += 1            
+                current_line += 1
+            elif input.isspace():
+                #do nothing         
+            #alphanumeric
             elif (state == "start" or state == "dig") and input.isdigit():
                 buffer += input
                 state = "dig"
@@ -36,19 +39,19 @@ class Lex:
             elif state == "idk" and not (input.isalpha() or input.isdigit()):
                 unget()
                 family = "identifierOrKeyword"
+            #operators
             elif state == "start" and input in ['+', '-']:
+                buffer += input
                 family = "addOperator"
             elif state == "start" and input == '*':
+                buffer += input
                 family = "mulOperator"
             elif state == "start" and input == '/':
                 buffer += input
                 state = "div"
             elif state == "div" and input == '/':
+                buffer += input
                 family = "mulOperator"
-            elif state == "start" and input in ['{', '}', '(', ')', '[', ']']:
-                family = "groupSymbol"
-            elif state == "start" and input in [',', ';', '.']:
-                family = "delimeter"
             elif state == "start" and input == '=':
                 buffer += input
                 state = "equal"
@@ -76,6 +79,14 @@ class Lex:
             elif state == "larger" and input != '=':
                 unget()
                 family = "relOperator"
+            #symbols
+            elif state == "start" and input in ['{', '}', '(', ')', '[', ']']:
+                buffer += input
+                family = "groupSymbol"
+            elif state == "start" and input in [',', ';', '.']:
+                buffer += input
+                family = "delimeter"
+            #comments
             elif state == "start" and input == '#':
                 state = "inSharp"
             elif state == "inSharp" and input == '$':
