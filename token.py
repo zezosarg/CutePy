@@ -6,7 +6,4 @@ class Token:
         self.line_number = line_number
 
     def __str__(self):
-        return str(self.recognized_string) + '\tfamily:\"' + str(self.family) + '\",  line: ' + str(self.line_number)
-
-#token = Token(")", "groupSymbol", 11)
-#print(str(token))
+        return str(self.recognized_string) + '\tfamily:\"' + str(self.family) + '\",\tline: ' + str(self.line_number)
