@@ -80,7 +80,7 @@ def main_primes():
             i = i + 1;
 #}
 
-if __name__ == ”__main__”:
+if __name__ == "__main__":
     #$ call of main functions #$
     main_factorial();
     main_fibonacci();
