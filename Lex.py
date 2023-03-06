@@ -20,133 +20,123 @@ class Lex:
         family = None
         
         while family == None:
-            input = self.file_pointer.read(1)
+            head = self.file_pointer.read(1)
 
-            if input == '\n':
+            if head == '\n':
                 self.current_line += 1
 
-            elif (state == "start" or state == "dig") and input.isdigit():
-                buffer += input
+            elif (state == "start" or state == "dig") and head.isdigit():
+                buffer += head
                 state = "dig"
-            elif state == "dig" and input.isalpha():
+            elif state == "dig" and head.isalpha():
                 self.error("found a letter attached to a number")
-            elif state == "dig" and not input.isdigit():
+            elif state == "dig" and not head.isdigit():
                 self.file_pointer.seek(self.file_pointer.tell() - 1)
                 if abs(int(buffer)) > 4294967295:
                     self.error("number exceeded limit")
                 family = "number"
 
-            elif state == "start" and input.isalpha():
-                buffer += input
+            elif state == "start" and head.isalpha():
+                buffer += head
                 state = "idk"
-            elif state == "idk" and (input.isalpha() or input.isdigit() or input == '_'):
-                buffer += input
+            elif state == "idk" and (head.isalpha() or head.isdigit() or head == '_'):
+                buffer += head
                 state = "idk"
-            elif state == "idk" and not (input.isalpha() or input.isdigit()):
+            elif state == "idk" and not (head.isalpha() or head.isdigit()):
                 self.file_pointer.seek(self.file_pointer.tell() - 1)
                 if len(buffer) > 30:
                     self.error("identifier or keyword exceeded limit")
                 family = "identifierOrKeyword"
 
-            elif state == "start" and input in ['{', '}', '(', ')', '[', ']', '"']:
-                buffer += input
+            elif state == "start" and head in ['{', '}', '(', ')', '[', ']', '"']:
+                buffer += head
                 family = "groupSymbol"
 
-            elif state == "start" and input in [',', ';', '.', ':']:
-                buffer += input
+            elif state == "start" and head in [',', ';', '.', ':']:
+                buffer += head
                 family = "delimeter"
 
-            elif state == "start" and input == '#':
-                buffer += input
+            elif state == "start" and head == '#':
+                buffer += head
                 state = "sharp"
-            elif state == "sharp" and input not in ['$', '{', '}']:
+            elif state == "sharp" and head not in ['$', '{', '}']:
                 self.file_pointer.seek(self.file_pointer.tell() - 1)
                 family = "delimiter"
-            elif state == "sharp" and input in ['{', '}']:
-                buffer += input
+            elif state == "sharp" and head in ['{', '}']:
+                buffer += head
                 family = "groupSymbol"
-            elif state == "sharp" and input == '$':
+            elif state == "sharp" and head == '$':
                 buffer = ""
                 state = "rem"
-            elif state == "rem" and input == '':
+            elif state == "rem" and head == '':
                 self.error("comments never closed")
-            elif state == "rem" and input == '#':
+            elif state == "rem" and head == '#':
                 state = "endComment"
             elif state == "rem":
                 continue
-            elif state == "endComment" and input == '$':
+            elif state == "endComment" and head == '$':
                 state = "start"
 
-            elif state == "start" and input in ['+', '-']:
-                buffer += input
+            elif state == "start" and head in ['+', '-']:
+                buffer += head
                 family = "addOperator"
 
-            elif state == "start" and input == '*':
-                buffer += input
+            elif state == "start" and head == '*':
+                buffer += head
                 family = "mulOperator"
 
-            elif state == "start" and input == '/':
-                buffer += input
+            elif state == "start" and head == '/':
+                buffer += head
                 state = "div"
-            elif state == "div" and input == '/':
-                buffer += input
+            elif state == "div" and head == '/':
+                buffer += head
                 family = "mulOperator"
 
-            elif state == "start" and input == '=':
-                buffer += input
+            elif state == "start" and head == '=':
+                buffer += head
                 state = "equal"
-            elif state == "equal" and input != '=':
+            elif state == "equal" and head != '=':
                 self.file_pointer.seek(self.file_pointer.tell() - 1)
                 family = "assignment"
-            elif state == "equal" and input == '=':
-                buffer += input
+            elif state == "equal" and head == '=':
+                buffer += head
                 family = "relOperator"
 
-            elif state == "start" and input == '!':
-                buffer += input
+            elif state == "start" and head == '!':
+                buffer += head
                 state = "mark"
-            elif state == "mark" and input == '=':
-                buffer += input
+            elif state == "mark" and head == '=':
+                buffer += head
                 family = "relOperator"
-            elif state == "mark" and input != '=':
+            elif state == "mark" and head != '=':
                 self.error("character ! must be followed by =")
             
-            elif state == "start" and input in ['<', '>']:
-                buffer += input
+            elif state == "start" and head in ['<', '>']:
+                buffer += head
                 state = "rel"
-            elif state == "rel" and input == '=':
-                buffer += input
+            elif state == "rel" and head == '=':
+                buffer += head
                 family = "relOperator"
-            elif state == "rel" and input != '=':
+            elif state == "rel" and head != '=':
                 self.file_pointer.seek(self.file_pointer.tell() - 1)
                 family = "relOperator"
 
-            elif state == "start" and input == '_':
-                buffer += input
+            elif state == "start" and head == '_':
+                buffer += head
                 state = "underscore"
-            elif state == "underscore" and input == '_':
-                buffer += input
+            elif state == "underscore" and head == '_':
+                buffer += head
                 family = "doubleUnderscore"
-            elif state == "underscore" and input != '_':
+            elif state == "underscore" and head != '_':
                 self.error("underscores must come in attached pairs")
             
-            elif state == "start" and input.isspace():
+            elif state == "start" and head.isspace():
                 continue
 
-            elif state == "start" and input == "":
-                family = "EOF"
-                self.error("end of file")
+            elif state == "start" and head == "":
+                family = "eof"
 
             else:
-                self.error("potentially unknown character " + input)
+                self.error("potentially unknown character " + head)
 
         return Token(buffer, family, self.current_line)
-
-lex = Lex("factorial.cpy")
-token = lex.next_token()
-
-while token.family != "error":
-    print(token)
-    token = lex.next_token()
-
-del lex
