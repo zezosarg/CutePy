@@ -17,6 +17,10 @@ class Parser:
         print("Error: ", description, " at line ", token.current_line)
         exit()
 
+    def start_rule(self):
+        def_main_part()
+        call_main_part()
+
     def def_main_part(self):
         global token
         self.def_main_function()
@@ -24,13 +28,9 @@ class Parser:
             token = self.get_next_token()
             self.def_main_function()
 
-    def start_rule():
-        def_main_part()
-        call_main_part()
-
     def def_main_function(self):
         if token.recognized_string == "def":
-            if token.recognized_string == "ID":  # ID is a valid function name, maybe with regex
+            if token.family == "identifierOrKeyword":
                 token = self.get_next_token()
                 if token.recognized_string == "(":
                     token = self.get_next_token()
@@ -42,8 +42,8 @@ class Parser:
                                 token = self.get_next_token()
                                 declarations()
                                 while token.recognized_string == "def":
-                                    def_function()
-                                statements()
+                                    self.def_function()
+                                self.statements()
                                 if token.recognized_string == "#}":
                                     token = self.get_next_token()
                                 else:
@@ -57,49 +57,48 @@ class Parser:
                 else:
                     self.error("Expected '('")
             else:
-                self.error("")
+                self.error("Expected identifier")
         else:
-            self.error("keyword'def' expected at start of program")
-
+            self.error("Expected keyword'def'")
 
     def def_function(self):
-        if token.recognized_string == "ID":
+        if token.family == "identifierOrKeyword":
             token = self.get_next_token()
             if token.recognized_string == "(":
                 token = self.get_next_token()
-                id_list()
+                self.id_list()
                 if token.recognized_string == ")":
                     token = self.get_next_token()
                     if token.recognized_string == ":":
                         token = self.get_next_token()
                         if token.recognized_string == "#{":
                             token = self.get_next_token()
-                            declarations()
+                            self.declarations()
                             while token.recognized_string == "def":
-                                def_function()
-                            statements()
+                                self.def_function()
+                            self.statements()
                             if token.recognized_string == "#}":
                                 token = self.get_next_token()
                             else:
                                 self.error("Expected '#}'")
-
                         else:
                             self.error("Expected '#{'")
                     else:
                         self.error("Expected ':'")
                 else:
-                    self.error("Expected '('")
+                    self.error("Expected ')'")
+            else:
+                self.error("Expected '('")
+        else:
+            self.error("Expected identifier")
 
-
-    def declarations():
+    def declarations(): #TODO 
         while token.recognized_string == "#declare":
             declaration_line()
-
 
     def declaration_line(self):
         token = self.get_next_token()
         id_list()
-
 
     def statement():
         if token.recognized_string == "if" or token == "while":
@@ -107,12 +106,10 @@ class Parser:
         else:
             simple_statement()
 
-
     def statements():
         statement()
         while token.recognized_string == "if" or token == "while" or token == "ID" or token == "print" or token == "return":
             statement()
-
 
     def simple_statement(self):
         if token.recognized_string == "ID":
@@ -124,7 +121,6 @@ class Parser:
         else:
             self.error("Token doesn't exist")
 
-
     def structured_statement(self):
         if token.recognized_string == "if":
             if_stat()
@@ -132,7 +128,6 @@ class Parser:
             while_stat()
         else:
             self.error("Token doesn't exist")
-
 
     def assignment_stat(self):  # Oi parentheseis paizoyn kapoio rolo sthn grammatiki?
         token = self.get_next_token()
@@ -172,7 +167,6 @@ class Parser:
                     self.error("Expected ';'")
         else:
             self.error("Expected '='")
-
 
     def print_stat(self):
         token = self.get_next_token()
@@ -390,7 +384,6 @@ class Parser:
                     self.error("Expected '=='") # better error?
             else:
                 self.error("Expected '__name__'") # better error?
-
         else:
             self.error("Expected 'if'") # better error?
 
@@ -411,6 +404,3 @@ class Parser:
                 self.error("Expected '('") 
         else:
             self.error("Expected 'ID'")  # better error?      
-    
-"""
-"""
