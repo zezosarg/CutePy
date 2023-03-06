@@ -1,413 +1,406 @@
 from Lex import Lex
 
 class Parser:
-    def __init__(self, lexical_analyser):
-        self.lexical_analyser = lexical_analyser
+    def __init__(self, fileInput):
+        self.lexical_analyser = Lex(fileInput)
 
-    def syntax_analyzer():
+    def syntax_analyzer(self):
         global token
-        token = self.get_token()
+        token = self.get_next_token()
         self.start_rule()
         print('compilation successfully completed')
 
-    def get_token():
-        return lexical_analyser.next_token()
+    def get_next_token(self):
+        return self.lexical_analyser.next_token()
 
     def error(self, description = "no description"):
         print("Error: ", description, " at line ", token.current_line)
         exit()
 
-    def start_rule():
+    def start_rule(self):
         def_main_part()
         call_main_part()
 
-    def def_main_part():
+    def def_main_part(self):
         global token
         self.def_main_function()
         while token.recognized_string == "def":
-            token = self.get_token()
+            token = self.get_next_token()
             self.def_main_function()
 
-    def def_main_function():
+    def def_main_function(self):
         if token.recognized_string == "def":
-            if token == "ID":  # ID is a valid function name, maybe with regex
-                token = get_token()
-                if token == "(":
-                    token = get_token()
-                    if token == ")":
-                        token = get_token()
-                        if token == ":":
-                            token = get_token()
-                            if token == "#{":
-                                token = get_token()
+            if token.family == "identifierOrKeyword":
+                token = self.get_next_token()
+                if token.recognized_string == "(":
+                    token = self.get_next_token()
+                    if token.recognized_string == ")":
+                        token = self.get_next_token()
+                        if token.recognized_string == ":":
+                            token = self.get_next_token()
+                            if token.recognized_string == "#{":
+                                token = self.get_next_token()
                                 declarations()
-                                while token == "def":
-                                    def_function()
-                                statements()
-                                if token == "#}":
-                                    token = get_token()
+                                while token.recognized_string == "def":
+                                    self.def_function()
+                                self.statements()
+                                if token.recognized_string == "#}":
+                                    token = self.get_next_token()
                                 else:
-                                    print("Expected '#}'")
+                                    self.error("Expected '#}'")
                             else:
-                                print("Expected '#{'")
+                                self.error("Expected '#{'")
                         else:
-                            print("Expected ':'")
+                            self.error("Expected ':'")
                     else:
-                        print("Expected ')'")
+                        self.error("Expected ')'")
                 else:
-                    print("Expected '('")
+                    self.error("Expected '('")
             else:
-                self.error("")
+                self.error("Expected identifier")
         else:
-            self.error("keyword'def' expected at start of program")
+            self.error("Expected keyword'def'")
 
-
-    def def_function():
-        if token == "ID":
-            token = get_token()
-            if token == "(":
-                token = get_token()
-                id_list()
-                if token == ")":
-                    token = get_token()
-                    if token == ":":
-                        token = get_token()
-                        if token == "#{":
-                            token = get_token()
-                            declarations()
-                            while (token == "def"):
-                                def_function()
-                            statements()
-                            if token == "#}":
-                                token = get_token()
+    def def_function(self):
+        if token.family == "identifierOrKeyword":
+            token = self.get_next_token()
+            if token.recognized_string == "(":
+                token = self.get_next_token()
+                self.id_list()
+                if token.recognized_string == ")":
+                    token = self.get_next_token()
+                    if token.recognized_string == ":":
+                        token = self.get_next_token()
+                        if token.recognized_string == "#{":
+                            token = self.get_next_token()
+                            self.declarations()
+                            while token.recognized_string == "def":
+                                self.def_function()
+                            self.statements()
+                            if token.recognized_string == "#}":
+                                token = self.get_next_token()
                             else:
-                                print("Expected '#}'")
-
+                                self.error("Expected '#}'")
                         else:
-                            print("Expected '#{'")
+                            self.error("Expected '#{'")
                     else:
-                        print("Expected ':'")
+                        self.error("Expected ':'")
                 else:
-                    print("Expected '('")
+                    self.error("Expected ')'")
+            else:
+                self.error("Expected '('")
+        else:
+            self.error("Expected identifier")
 
-
-    def declarations():
-        while token == "#declare":
+    def declarations(): #TODO 
+        while token.recognized_string == "#declare":
             declaration_line()
 
-
-    def declaration_line():
-        token = get_token()
+    def declaration_line(self):
+        token = self.get_next_token()
         id_list()
 
-
     def statement():
-        if token == "if" or token == "while":
+        if token.recognized_string == "if" or token == "while":
             structured_statement()
         else:
             simple_statement()
 
-
     def statements():
         statement()
-        while token == "if" or token == "while" or token == "ID" or token == "print" or token == "return":
+        while token.recognized_string == "if" or token == "while" or token == "ID" or token == "print" or token == "return":
             statement()
 
-
-    def simple_statement():
-        if token == "ID":
+    def simple_statement(self):
+        if token.recognized_string == "ID":
             assignment_stat()
-        elif token == "print":
+        elif token.recognized_string == "print":
             print_stat()
-        elif token == "return":
+        elif token.recognized_string == "return":
             return_stat()
         else:
-            print("Token doesn't exist")
+            self.error("Token doesn't exist")
 
-
-    def structured_statement():
-        if token == "if":
+    def structured_statement(self):
+        if token.recognized_string == "if":
             if_stat()
-        elif token == "while":
+        elif token.recognized_string == "while":
             while_stat()
         else:
-            print("Token doesn't exist")
+            self.error("Token doesn't exist")
 
-
-    def assignment_stat():  # Oi parentheseis paizoyn kapoio rolo sthn grammatiki?
-        token = get_token()
-        if token == "=":
-            token = get_token()
-            if token == "int":
-                token = get_token()
-                if token == "(":
-                    token = get_token()
-                    if token == "input":
-                        token = get_token()
-                        if token == "(":
-                            token = get_token()
-                            if token == ")":
-                                token = get_token()
-                                if token == ")":
-                                    token = get_token()
-                                    if token == ";":
-                                        token = get_token()
+    def assignment_stat(self):  # Oi parentheseis paizoyn kapoio rolo sthn grammatiki?
+        token = self.get_next_token()
+        if token.recognized_string == "=":
+            token = self.get_next_token()
+            if token.recognized_string == "int":
+                token = self.get_next_token()
+                if token.recognized_string == "(":
+                    token = self.get_next_token()
+                    if token.recognized_string == "input":
+                        token = self.get_next_token()
+                        if token.recognized_string == "(":
+                            token = self.get_next_token()
+                            if token.recognized_string == ")":
+                                token = self.get_next_token()
+                                if token.recognized_string == ")":
+                                    token = self.get_next_token()
+                                    if token.recognized_string == ";":
+                                        token = self.get_next_token()
                                     else:
-                                        print("Expected ';'")
+                                        self.error("Expected ';'")
                                 else:
-                                    print("Expected ')'")
+                                    self.error("Expected ')'")
                             else:
-                                print("Expected ')'")
+                                self.error("Expected ')'")
                         else:
-                            print("Expected '('")
+                            self.error("Expected '('")
                     else:
-                        print("Expected 'input'")
+                        self.error("Expected 'input'")
                 else:
-                    print("Expected '('")
+                    self.error("Expected '('")
             else:
                 expression()
-                if token == ";":
-                    token = get_token()
+                if token.recognized_string == ";":
+                    token = self.get_next_token()
                 else:
-                    print("Expected ';'")
+                    self.error("Expected ';'")
         else:
-            print("Expected '='")
+            self.error("Expected '='")
 
-
-    def print_stat():
-        token = get_token()
-        if token == "(":
-            token = get_token()
+    def print_stat(self):
+        token = self.get_next_token()
+        if token.recognized_string == "(":
+            token = self.get_next_token()
             expression()
-            if token == ")":
-                token = get_token()
-                if token == ";":
-                    token = get_token()
+            if token.recognized_string == ")":
+                token = self.get_next_token()
+                if token.recognized_string == ";":
+                    token = self.get_next_token()
                 else:
-                    print("Expected ';'")
+                    self.error("Expected ';'")
             else:
-                print("Expected ')'")
+                self.error("Expected ')'")
         else:
-            print("Expected '('")
+            self.error("Expected '('")
 
-    def return_stat():
-        token = get_token()
-        if token == "(":
-            token = get_token()
+    def return_stat(self):
+        token = self.get_next_token()
+        if token.recognized_string == "(":
+            token = self.get_next_token()
             expression()
-            if token == ")":
-                token = get_token()
-                if token == ";":
-                    token = get_token()
+            if token.recognized_string == ")":
+                token = self.get_next_token()
+                if token.recognized_string == ";":
+                    token = self.get_next_token()
                 else:
-                    print("Expected ';'")
+                    self.error("Expected ';'")
             else:
-                print("Expected ')'")
+                self.error("Expected ')'")
         else:
-            print("Expected '('")
+            self.error("Expected '('")
 
-    def if_stat():
-        token = get_token()
-        if token == "(":
-            token = get_token()
+    def if_stat(self):
+        token = self.get_next_token()
+        if token.recognized_string == "(":
+            token = self.get_next_token()
             condition()
-            if token == ")":
-                token = get_token()
-                if token == ":":
-                    token = get_token()
-                    if token == "#{":
+            if token.recognized_string == ")":
+                token = self.get_next_token()
+                if token.recognized_string == ":":
+                    token = self.get_next_token()
+                    if token.recognized_string == "#{":
                         statements()
-                        if token == "#}":
-                            token = get_token()
+                        if token.recognized_string == "#}":
+                            token = self.get_next_token()
                         else:
-                            print("Expected '#}'")
+                            self.error("Expected '#}'")
                     else:
                         statement()
-                    if token == "else":
-                        token = get_token()
-                        if token == ":":
-                            token = get_token()
-                            if token == "#{":
+                    if token.recognized_string == "else":
+                        token = self.get_next_token()
+                        if token.recognized_string == ":":
+                            token = self.get_next_token()
+                            if token.recognized_string == "#{":
                                 statements()
-                                if token == "#}":
-                                    token = get_token()
+                                if token.recognized_string == "#}":
+                                    token = self.get_next_token()
                                 else:
-                                    print("Expected '#}'")
+                                    self.error("Expected '#}'")
                             else:
                                 statement()
                 else:
-                    print("Expected ':'")
+                    self.error("Expected ':'")
             else:
-                print("Expected ')'")
+                self.error("Expected ')'")
         else:
-            print("Expected '('")
+            self.error("Expected '('")
 
-    def while_stat():
-        token = get_token()
-        if token == "(":
-            token = get_token()
+    def while_stat(self):
+        token = self.get_next_token()
+        if token.recognized_string == "(":
+            token = self.get_next_token()
             condition()
-            if token == ")":
-                token = get_token()
-                if token == ":":
-                    token = get_token()
-                    if token == "#{":
+            if token.recognized_string == ")":
+                token = self.get_next_token()
+                if token.recognized_string == ":":
+                    token = self.get_next_token()
+                    if token.recognized_string == "#{":
                         statements()
-                        if token == "#}":
-                            token = get_token()
+                        if token.recognized_string == "#}":
+                            token = self.get_next_token()
                         else:
-                            print("Expected '#}'")
+                            self.error("Expected '#}'")
                     else:
                         statement()
                 else:
-                    print("Expected ':'")
+                    self.error("Expected ':'")
             else:
-                print("Expected ')'")
+                self.error("Expected ')'")
         else:
-            print("Expected '('")
+            self.error("Expected '('")
 
-    def id_list():
-        if token == "ID":
-            token = get_token()
-            while token == ",":
-                token = get_token()
-                if token == "ID":
-                    token = get_token()
+    def id_list(self):
+        if token.recognized_string == "ID":
+            token = self.get_next_token()
+            while token.recognized_string == ",":
+                token = self.get_next_token()
+                if token.recognized_string == "ID":
+                    token = self.get_next_token()
                 else:
-                    print("Expected a parameter")
+                    self.error("Expected a parameter")
 
-    def expression():
+    def expression(self):
         optional_sign()
         term()
-        while token == "+" or token == "-":
-            token = get_token()
+        while token.recognized_string == "+" or token == "-":
+            token = self.get_next_token()
             term()
 
-    def term():
-        factor()
-        while token == "*" or token == "//":
-            token = get_token()
-            factor()
-
-    def factor():
+    def factor(self):
         if token.isnumeric():
-            token = get_token()
-        elif token == "(":
-            token = get_token()
+            token = self.get_next_token()
+        elif token.recognized_string == "(":
+            token = self.get_next_token()
             expression()
-            if token == ")":
-                token = get_token()
+            if token.recognized_string == ")":
+                token = self.get_next_token()
             else:
-                print("Expected ')'")
-        elif token == "ID":
-            token = get_token()
+                self.error("Expected ')'")
+        elif token.recognized_string == "ID":
+            token = self.get_next_token()
             idtail()
         else:
-            print("Expected a factor") # better error?
+            self.error("Expected a factor") # better error?
 
-    def idtail():
-        token = get_token()
-        if token == "(":
-            token = get_token()
-            if token == ")":
-                token = get_token()
+    def term(self):
+        factor()
+        while token.recognized_string == "*" or token == "//":
+            token = self.get_next_token()
+            factor()
+
+
+    def idtail(self):
+        token = self.get_next_token()
+        if token.recognized_string == "(":
+            token = self.get_next_token()
+            if token.recognized_string == ")":
+                token = self.get_next_token()
             else:
                 actual_par_list()
-                if token == ")":
-                    token = get_token()
+                if token.recognized_string == ")":
+                    token = self.get_next_token()
                 else:
-                    print("Expected ')'")
+                    self.error("Expected ')'")
 
-    def actual_par_list():
+    def actual_par_list(self):
         expression()
-        while token == ",":
-            token = get_token()
+        while token.recognized_string == ",":
+            token = self.get_next_token()
             expression()
 
-    def optional_sign():
-        if token == "+" or token == "-":
-            token = get_token()
+    def optional_sign(self):
+        if token.recognized_string == "+" or token.recognized_string == "-":
+            token = self.get_next_token()
         
-    def condition():
+    def condition(self):
         bool_term()
-        while token == "or":
-            token = get_token()
+        while token.recognized_string == "or":
+            token = self.get_next_token()
             bool_term()
 
-    def bool_term():
+    def bool_term(self):
         bool_factor
-        while token == "and":
-            token = get_token()
+        while token.recognized_string == "and":
+            token = self.get_next_token()
             bool_factor()
 
-    def bool_factor():
-        if token == "not":
-            token = get_token()
-            if token == "[":
-                token = get_token()
+    def bool_factor(self):
+        if token.recognized_string == "not":
+            token = self.get_next_token()
+            if token.recognized_string == "[":
+                token = self.get_next_token()
                 condition()
-                if token == "]":
-                    token = get_token()
+                if token.recognized_string == "]":
+                    token = self.get_next_token()
                 else:
-                    print("Expected ']'")
+                    self.error("Expected ']'")
             else:
-                print("Expected '['")
-        elif token == "[":
-            token = get_token()
+                self.error("Expected '['")
+        elif token.recognized_string == "[":
+            token = self.get_next_token()
             condition()
-            if token == "]":
-                token = get_token()
+            if token.recognized_string == "]":
+                token = self.get_next_token()
             else:
-                print("Expected ']'")
+                self.error("Expected ']'")
         else:
             expression()
-            if token == "==" or token == "<" or token == ">" or token == "!=" or token == "<=" or token == ">=":
-                token = get_token()
+            if token.recognized_string == "==" or token.recognized_string == "<" or token.recognized_string == ">" or token.recognized_string == "!=" or token.recognized_string == "<=" or token.recognized_string == ">=":
+                token = self.get_next_token()
             else:
-                print("Expected relational operator")
+                self.error("Expected relational operator")
             expression()
 
-    def call_main_part():
-        if token == "if":
-            token = get_token()
-            if token == "__name__":
-                token = get_token()
-                if token == "==":
-                    token = get_token()
-                    if token == "__main__":
-                        token == get_token()
-                        if token == ":":
-                            token = get_token()
+    def call_main_part(self):
+        if token.recognized_string == "if":
+            token = self.get_next_token()
+            if token.recognized_string == "__name__":
+                token = self.get_next_token()
+                if token.recognized_string == "==":
+                    token = self.get_next_token()
+                    if token.recognized_string == "__main__":
+                        token == self.get_next_token()
+                        if token.recognized_string == ":":
+                            token = self.get_next_token()
                             main_function_call()
-                            while token == "ID":
+                            while token.recognized_string == "ID":
                                 main_function_call()
                         else:
-                            print("Expected ':'") # better error?
+                            self.error("Expected ':'") # better error?
                     else:
-                        print("Expected '__main__'") # better error?
+                        self.error("Expected '__main__'") # better error?
                 else:
-                    print("Expected '=='") # better error?
+                    self.error("Expected '=='") # better error?
             else:
-                print("Expected '__name__'") # better error?
-
+                self.error("Expected '__name__'") # better error?
         else:
-            print("Expected 'if'") # better error?
+            self.error("Expected 'if'") # better error?
 
-    def main_function_call():
-        if token == "ID":
-            token == get_token()
-            if token == "(":
-                token = get_token()
-                if token == ")":
-                    token = get_token()
-                    if token == ";":
-                        token == get_token()
+    def main_function_call(self):
+        if token.recognized_string == "ID":
+            token == self.get_next_token()
+            if token.recognized_string == "(":
+                token = self.get_next_token()
+                if token.recognized_string == ")":
+                    token = self.get_next_token()
+                    if token.recognized_string == ";":
+                        token == self.get_next_token()
                     else:
-                        print("Expected ';'")
+                        self.error("Expected ';'")
                 else:
-                    print("Expected ')'")
+                    self.error("Expected ')'")
             else:
-                print("Expected '('") 
+                self.error("Expected '('") 
         else:
-            print("Expected 'ID'")  # better error?      
-    
+            self.error("Expected 'ID'")  # better error?      
