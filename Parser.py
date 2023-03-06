@@ -24,7 +24,7 @@ class Parser:
     def def_main_part():
         global token
         self.def_main_function()
-        while (token.recognized_string == "def"):
+        while token.recognized_string == "def":
             token = self.get_token()
             self.def_main_function()
 
@@ -41,7 +41,7 @@ class Parser:
                             if token == "#{":
                                 token = get_token()
                                 declarations()
-                                while (token == "def"):
+                                while token == "def":
                                     def_function()
                                 statements()
                                 if token == "#}":
@@ -61,25 +61,24 @@ class Parser:
         else:
             self.error("keyword'def' expected at start of program")
 
-'''
 
     def def_function():
-        if token == "ID"):
+        if token == "ID":
             token = get_token()
-            if token == "("):
+            if token == "(":
                 token = get_token()
                 id_list()
-                if token == ")"):
+                if token == ")":
                     token = get_token()
-                    if token == ":"):
+                    if token == ":":
                         token = get_token()
-                        if token == "#{"):
+                        if token == "#{":
                             token = get_token()
                             declarations()
                             while (token == "def"):
                                 def_function()
                             statements()
-                            if token == "#}"):
+                            if token == "#}":
                                 token = get_token()
                             else:
                                 print("Expected '#}'")
@@ -93,7 +92,7 @@ class Parser:
 
 
     def declarations():
-        while (token == "#declare"):
+        while token == "#declare":
             declaration_line()
 
 
@@ -103,7 +102,7 @@ class Parser:
 
 
     def statement():
-        if token == "if" or token == "while"):
+        if token == "if" or token == "while":
             structured_statement()
         else:
             simple_statement()
@@ -111,27 +110,25 @@ class Parser:
 
     def statements():
         statement()
-        while (token == "if" or token == "while"
-            or token == "ID" or token == "print"
-            or token == "return"):
+        while token == "if" or token == "while" or token == "ID" or token == "print" or token == "return":
             statement()
 
 
     def simple_statement():
-        if token == "ID"):
+        if token == "ID":
             assignment_stat()
-        elif token == "print"):
+        elif token == "print":
             print_stat()
-        elif token == "return"):
+        elif token == "return":
             return_stat()
         else:
             print("Token doesn't exist")
 
 
     def structured_statement():
-        if token == "if"):
+        if token == "if":
             if_stat()
-        elif token == "while"):
+        elif token == "while":
             while_stat()
         else:
             print("Token doesn't exist")
@@ -139,21 +136,21 @@ class Parser:
 
     def assignment_stat():  # Oi parentheseis paizoyn kapoio rolo sthn grammatiki?
         token = get_token()
-        if token == "="):
+        if token == "=":
             token = get_token()
-            if token == "int"):
+            if token == "int":
                 token = get_token()
-                if token == "("):
+                if token == "(":
                     token = get_token()
-                    if token == "input"):
+                    if token == "input":
                         token = get_token()
-                        if token == "("):
+                        if token == "(":
                             token = get_token()
-                            if token == ")"):
+                            if token == ")":
                                 token = get_token()
-                                if token == ")"):
+                                if token == ")":
                                     token = get_token()
-                                    if token == ";"):
+                                    if token == ";":
                                         token = get_token()
                                     else:
                                         print("Expected ';'")
@@ -169,7 +166,7 @@ class Parser:
                     print("Expected '('")
             else:
                 expression()
-                if token == ";"):
+                if token == ";":
                     token = get_token()
                 else:
                     print("Expected ';'")
@@ -179,12 +176,12 @@ class Parser:
 
     def print_stat():
         token = get_token()
-        if token == "("):
+        if token == "(":
             token = get_token()
             expression()
-            if token == ")"):
+            if token == ")":
                 token = get_token()
-                if token == ";"):
+                if token == ";":
                     token = get_token()
                 else:
                     print("Expected ';'")
@@ -195,12 +192,12 @@ class Parser:
 
     def return_stat():
         token = get_token()
-        if token == "("):
+        if token == "(":
             token = get_token()
             expression()
-            if token == ")"):
+            if token == ")":
                 token = get_token()
-                if token == ";"):
+                if token == ";":
                     token = get_token()
                 else:
                     print("Expected ';'")
@@ -211,28 +208,28 @@ class Parser:
 
     def if_stat():
         token = get_token()
-        if token == "("):
+        if token == "(":
             token = get_token()
             condition()
-            if token == ")"):
+            if token == ")":
                 token = get_token()
-                if token == ":"):
+                if token == ":":
                     token = get_token()
-                    if token == "#{"):
+                    if token == "#{":
                         statements()
-                        if token == "#}"):
+                        if token == "#}":
                             token = get_token()
                         else:
                             print("Expected '#}'")
                     else:
                         statement()
-                    if token == "else"):
+                    if token == "else":
                         token = get_token()
-                        if token == ":"):
+                        if token == ":":
                             token = get_token()
-                            if token == "#{"):
+                            if token == "#{":
                                 statements()
-                                if token == "#}"):
+                                if token == "#}":
                                     token = get_token()
                                 else:
                                     print("Expected '#}'")
@@ -247,16 +244,16 @@ class Parser:
 
     def while_stat():
         token = get_token()
-        if token == "("):
+        if token == "(":
             token = get_token()
             condition()
-            if token == ")"):
+            if token == ")":
                 token = get_token()
-                if token == ":"):
+                if token == ":":
                     token = get_token()
-                    if token == "#{"):
+                    if token == "#{":
                         statements()
-                        if token == "#}"):
+                        if token == "#}":
                             token = get_token()
                         else:
                             print("Expected '#}'")
@@ -270,11 +267,11 @@ class Parser:
             print("Expected '('")
 
     def id_list():
-        if token == "ID"):
+        if token == "ID":
             token = get_token()
-            while (token == ","):
+            while token == ",":
                 token = get_token()
-                if token == "ID"):
+                if token == "ID":
                     token = get_token()
                 else:
                     print("Expected a parameter")
@@ -282,27 +279,27 @@ class Parser:
     def expression():
         optional_sign()
         term()
-        while (token == "+" or token == "-"):
+        while token == "+" or token == "-":
             token = get_token()
             term()
 
     def term():
         factor()
-        while (token == "*" or token == "//"):
+        while token == "*" or token == "//":
             token = get_token()
             factor()
 
     def factor():
-        if token.isnumeric()):
+        if token.isnumeric():
             token = get_token()
-        elif token == "("):
+        elif token == "(":
             token = get_token()
             expression()
-            if token == ")"):
+            if token == ")":
                 token = get_token()
             else:
                 print("Expected ')'")
-        elif token == "ID"):
+        elif token == "ID":
             token = get_token()
             idtail()
         else:
@@ -310,81 +307,79 @@ class Parser:
 
     def idtail():
         token = get_token()
-        if token == "("):
+        if token == "(":
             token = get_token()
-            if token == ")"):
+            if token == ")":
                 token = get_token()
             else:
                 actual_par_list()
-                if token == ")"):
+                if token == ")":
                     token = get_token()
                 else:
                     print("Expected ')'")
 
     def actual_par_list():
         expression()
-        while (token == ","):
+        while token == ",":
             token = get_token()
             expression()
 
     def optional_sign():
-        if token == "+" or token == "-"):
+        if token == "+" or token == "-":
             token = get_token()
         
     def condition():
         bool_term()
-        while (token == "or"):
+        while token == "or":
             token = get_token()
             bool_term()
 
     def bool_term():
         bool_factor
-        while (token == "and"):
+        while token == "and":
             token = get_token()
             bool_factor()
 
     def bool_factor():
-        if token == "not"):
+        if token == "not":
             token = get_token()
-            if token == "["):
+            if token == "[":
                 token = get_token()
                 condition()
-                if token == "]"):
+                if token == "]":
                     token = get_token()
                 else:
                     print("Expected ']'")
             else:
                 print("Expected '['")
-        elif token == "["):
+        elif token == "[":
             token = get_token()
             condition()
-            if token == "]"):
+            if token == "]":
                 token = get_token()
             else:
                 print("Expected ']'")
         else:
             expression()
-            if token == "==" or token == "<" or token == ">"
-                or token == "!=" or token == "<="
-                or token == ">="):
+            if token == "==" or token == "<" or token == ">" or token == "!=" or token == "<=" or token == ">=":
                 token = get_token()
             else:
                 print("Expected relational operator")
             expression()
 
     def call_main_part():
-        if token == "if"):
+        if token == "if":
             token = get_token()
-            if token == "__name__"):
+            if token == "__name__":
                 token = get_token()
-                if token == "=="):
+                if token == "==":
                     token = get_token()
-                    if token == "__main__"):
+                    if token == "__main__":
                         token == get_token()
-                        if token == ":"):
+                        if token == ":":
                             token = get_token()
                             main_function_call()
-                            while (token == "ID"):
+                            while token == "ID":
                                 main_function_call()
                         else:
                             print("Expected ':'") # better error?
@@ -399,13 +394,13 @@ class Parser:
             print("Expected 'if'") # better error?
 
     def main_function_call():
-        if token == "ID"):
+        if token == "ID":
             token == get_token()
-            if token == "("):
+            if token == "(":
                 token = get_token()
-                if token == ")"):
+                if token == ")":
                     token = get_token()
-                    if token == ";"):
+                    if token == ";":
                         token == get_token()
                     else:
                         print("Expected ';'")
@@ -416,4 +411,3 @@ class Parser:
         else:
             print("Expected 'ID'")  # better error?      
     
-'''
