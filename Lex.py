@@ -36,7 +36,7 @@ class Lex:
                     self.error("number exceeded limit")
                 family = "number"
 
-            elif state == "start" and head.isalpha():
+            elif state == "start" and (head.isalpha() or head == '_'):
                 buffer += head
                 state = "idk"
             elif state == "idk" and (head.isalpha() or head.isdigit() or head == '_'):
@@ -121,15 +121,6 @@ class Lex:
                 self.file_pointer.seek(self.file_pointer.tell() - 1)
                 family = "relOperator"
 
-            elif state == "start" and head == '_':
-                buffer += head
-                state = "underscore"
-            elif state == "underscore" and head == '_':
-                buffer += head
-                family = "doubleUnderscore"
-            elif state == "underscore" and head != '_':
-                self.error("underscores must come in attached pairs")
-            
             elif state == "start" and head.isspace():
                 continue
 

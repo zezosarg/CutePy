@@ -29,6 +29,7 @@ class Parser:
             self.def_main_function()
 
     def def_main_function(self):
+        global token
         if token.recognized_string == "def":
             if token.family == "identifierOrKeyword":
                 token = self.get_next_token()
@@ -40,7 +41,7 @@ class Parser:
                             token = self.get_next_token()
                             if token.recognized_string == "#{":
                                 token = self.get_next_token()
-                                declarations()
+                                self.declarations()
                                 while token.recognized_string == "def":
                                     self.def_function()
                                 self.statements()
@@ -59,9 +60,10 @@ class Parser:
             else:
                 self.error("Expected identifier")
         else:
-            self.error("Expected keyword'def'")
+            self.error("Expected keyword 'def'")
 
     def def_function(self):
+        global token
         if token.family == "identifierOrKeyword":
             token = self.get_next_token()
             if token.recognized_string == "(":
@@ -92,19 +94,25 @@ class Parser:
         else:
             self.error("Expected identifier")
 
-    def declarations(): #TODO 
-        while token.recognized_string == "#declare":
-            declaration_line()
-
+    def declarations():
+        global token
+        while token.recognized_string == "#":
+            token = self.get_next_token()
+            self.declaration_line()
+            
     def declaration_line(self):
-        token = self.get_next_token()
-        id_list()
+        global token
+        if token.recognized_string == "declare":
+            token = self.get_next_token()
+            self.id_list()
+        else:
+            self.error("Expected 'declare' keyword after '#'")
 
     def statement():
-        if token.recognized_string == "if" or token == "while":
-            structured_statement()
+        if token.recognized_string == "if" or token.recognized_string == "while":
+            self.structured_statement()
         else:
-            simple_statement()
+            self.simple_statement()
 
     def statements():
         statement()
@@ -112,20 +120,20 @@ class Parser:
             statement()
 
     def simple_statement(self):
-        if token.recognized_string == "ID":
-            assignment_stat()
-        elif token.recognized_string == "print":
-            print_stat()
+        if token.recognized_string == "print":
+            self.print_stat()
         elif token.recognized_string == "return":
-            return_stat()
+            self.return_stat()
+        elif token.family == "identifierOrKeyword": #this string should be "identifier" but this family doesn't exit. maybe a disctinction between keywords and identifiers should be made.
+            self.assignment_stat()
         else:
             self.error("Token doesn't exist")
 
     def structured_statement(self):
         if token.recognized_string == "if":
-            if_stat()
+            self.if_stat()
         elif token.recognized_string == "while":
-            while_stat()
+            self.while_stat()
         else:
             self.error("Token doesn't exist")
 
