@@ -43,6 +43,7 @@ class Parser:
                                 token = self.get_next_token()
                                 self.declarations()
                                 while token.recognized_string == "def":
+                                    token = self.get_next_token()
                                     self.def_function()
                                 self.statements()
                                 if token.recognized_string == "#}":
@@ -77,6 +78,7 @@ class Parser:
                             token = self.get_next_token()
                             self.declarations()
                             while token.recognized_string == "def":
+                                token = self.get_next_token()
                                 self.def_function()
                             self.statements()
                             if token.recognized_string == "#}":
@@ -138,6 +140,7 @@ class Parser:
             self.error("Token doesn't exist")
 
     def assignment_stat(self):  # Oi parentheseis paizoyn kapoio rolo sthn grammatiki?
+        global token
         token = self.get_next_token()
         if token.recognized_string == "=":
             token = self.get_next_token()
