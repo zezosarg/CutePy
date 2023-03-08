@@ -171,7 +171,7 @@ class Parser:
                 else:
                     self.error("Expected '('")
             else:
-                expression()
+                self.expression()
                 if token.recognized_string == ";":
                     token = self.get_next_token()
                 else:
@@ -218,31 +218,33 @@ class Parser:
         token = self.get_next_token()
         if token.recognized_string == "(":
             token = self.get_next_token()
-            condition()
+            self.condition()
             if token.recognized_string == ")":
                 token = self.get_next_token()
                 if token.recognized_string == ":":
                     token = self.get_next_token()
                     if token.recognized_string == "#{":
-                        statements()
+                        token = self.get_next_token()
+                        self.statements()
                         if token.recognized_string == "#}":
                             token = self.get_next_token()
                         else:
                             self.error("Expected '#}'")
                     else:
-                        statement()
+                        self.statement()
                     if token.recognized_string == "else":
                         token = self.get_next_token()
                         if token.recognized_string == ":":
                             token = self.get_next_token()
                             if token.recognized_string == "#{":
-                                statements()
+                                token = self.get_next_token()
+                                self.statements()
                                 if token.recognized_string == "#}":
                                     token = self.get_next_token()
                                 else:
                                     self.error("Expected '#}'")
                             else:
-                                statement()
+                                self.statement()
                 else:
                     self.error("Expected ':'")
             else:
@@ -251,22 +253,24 @@ class Parser:
             self.error("Expected '('")
 
     def while_stat(self):
+        global token
         token = self.get_next_token()
         if token.recognized_string == "(":
             token = self.get_next_token()
-            condition()
+            self.condition()
             if token.recognized_string == ")":
                 token = self.get_next_token()
                 if token.recognized_string == ":":
                     token = self.get_next_token()
                     if token.recognized_string == "#{":
-                        statements()
+                        token = self.get_next_token()
+                        self.statements()
                         if token.recognized_string == "#}":
                             token = self.get_next_token()
                         else:
                             self.error("Expected '#}'")
                     else:
-                        statement()
+                        self.statement()
                 else:
                     self.error("Expected ':'")
             else:
@@ -275,54 +279,53 @@ class Parser:
             self.error("Expected '('")
 
     def id_list(self):
-        if token.recognized_string == "ID":
+        global token
+        if token.family == "identifierOrKeyword":
             token = self.get_next_token()
             while token.recognized_string == ",":
                 token = self.get_next_token()
-                if token.recognized_string == "ID":
+                if token.family == "identifierOrKeyword":
                     token = self.get_next_token()
                 else:
-                    self.error("Expected a parameter")
+                    self.error("Expected an identifier")
 
     def expression(self):
-        optional_sign()
-        term()
+        global token
+        self.optional_sign()
+        self.term()
         while token.recognized_string == "+" or token == "-":
             token = self.get_next_token()
-            term()
+            self.term()
+
+    def term(self):
+        self.factor()
+        while token.recognized_string == "*" or token.recognized_string == "//":
+            token = self.get_next_token()
+            self.factor()
 
     def factor(self):
-        if token.isnumeric():
+        global token
+        if token.recognized_string.isnumeric():
             token = self.get_next_token()
         elif token.recognized_string == "(":
             token = self.get_next_token()
-            expression()
+            self.expression()
             if token.recognized_string == ")":
                 token = self.get_next_token()
             else:
                 self.error("Expected ')'")
-        elif token.recognized_string == "ID":
+        elif token.family == "identifierOrKeyword":
             token = self.get_next_token()
-            idtail()
+            self.idtail()
         else:
-            self.error("Expected a factor") # better error?
-
-    def term(self):
-        factor()
-        while token.recognized_string == "*" or token == "//":
-            token = self.get_next_token()
-            factor()
-
+            self.error("Expected integer or expression or identifier")
 
     def idtail(self):
-        token = self.get_next_token()
+        global token
         if token.recognized_string == "(":
             token = self.get_next_token()
+            self.actual_par_list()
             if token.recognized_string == ")":
-                token = self.get_next_token()
-            else:
-                actual_par_list()
-                if token.recognized_string == ")":
                     token = self.get_next_token()
                 else:
                     self.error("Expected ')'")
