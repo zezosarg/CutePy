@@ -27,7 +27,6 @@ class Parser:
         global token
         self.def_main_function()
         while token.recognized_string == "def":
-            token = self.get_token()
             self.def_main_function()
 
     def def_main_function(self):
@@ -121,7 +120,7 @@ class Parser:
 
     def statements(self):
         self.statement()
-        while token.recognized_string == "if" or token == "while" or token == "ID" or token == "print" or token == "return":
+        while token.recognized_string == "if" or token.recognized_string == "while" or token.family == "identifierOrKeyword" or token.recognized_string == "print" or token.recognized_string == "return":
             self.statement()
 
     def simple_statement(self):
@@ -296,7 +295,7 @@ class Parser:
         global token
         self.optional_sign()
         self.term()
-        while token.recognized_string == "+" or token == "-":
+        while token.recognized_string == "+" or token.recognized_string == "-":
             token = self.get_token()
             self.term()
 
@@ -397,14 +396,15 @@ class Parser:
                 if token.recognized_string == "==":
                     token = self.get_token()
                     if token.recognized_string == '"':
+                        token = self.get_token()
                         if token.recognized_string == "__main__":
-                            token == self.get_token()
+                            token = self.get_token()
                             if token.recognized_string == '"':
+                                token = self.get_token()
                                 if token.recognized_string == ":":
                                     token = self.get_token()
                                     self.main_function_call()
                                     while token.family == "identifierOrKeyword":
-                                        token = self.get_token()
                                         self.main_function_call()
                                 else:
                                     self.error("Expected ':' in call_main_part")
@@ -424,13 +424,13 @@ class Parser:
     def main_function_call(self):
         global token
         if token.family == "identifierOrKeyword":
-            token == self.get_token()
+            token = self.get_token()
             if token.recognized_string == "(":
                 token = self.get_token()
                 if token.recognized_string == ")":
                     token = self.get_token()
                     if token.recognized_string == ";":
-                        token == self.get_token()
+                        token = self.get_token()
                     else:
                         self.error("Expected ';' in main_function_call")
                 else:
