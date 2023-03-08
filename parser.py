@@ -11,7 +11,9 @@ class Parser:
         print('compilation successfully completed')
 
     def get_token(self):
-        return self.lexical_analyser.next_token()
+        next_token = self.lexical_analyser.next_token()
+        print("token:", next_token)
+        return next_token
 
     def error(self, description = "no description"):
         print("Error:", description, " at line:", token.line_number, " token.recognized_string:", token.recognized_string)
@@ -31,6 +33,7 @@ class Parser:
     def def_main_function(self):
         global token
         if token.recognized_string == "def":
+            token = self.get_token()
             if token.family == "identifierOrKeyword":
                 token = self.get_token()
                 if token.recognized_string == "(":
@@ -96,7 +99,7 @@ class Parser:
         else:
             self.error("Expected identifier in def_function")
 
-    def declarations():
+    def declarations(self):
         global token
         while token.recognized_string == "#":
             token = self.get_token()
@@ -110,16 +113,16 @@ class Parser:
         else:
             self.error("Expected 'declare' keyword after '#' in declaration_line")
 
-    def statement():
+    def statement(self):
         if token.recognized_string == "if" or token.recognized_string == "while":
             self.structured_statement()
         else:
             self.simple_statement()
 
-    def statements():
-        statement()
+    def statements(self):
+        self.statement()
         while token.recognized_string == "if" or token == "while" or token == "ID" or token == "print" or token == "return":
-            statement()
+            self.statement()
 
     def simple_statement(self):
         if token.recognized_string == "print":

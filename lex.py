@@ -24,7 +24,10 @@ class Lex:
             if head == '\n':
                 self.current_line += 1
 
-            elif (state == "start" or state == "dig") and head.isdigit():
+            elif state == "start" and head.isdigit():
+                buffer += head
+                state = "dig"
+            elif state == "dig" and head.isdigit():
                 buffer += head
                 state = "dig"
             elif state == "dig" and head.isalpha():
