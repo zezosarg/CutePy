@@ -1,4 +1,4 @@
-from Lex import Lex
+from lex import Lex
 
 lex = Lex("factorial.cpy")
 token = lex.next_token()

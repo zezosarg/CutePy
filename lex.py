@@ -45,7 +45,7 @@ class Lex:
                 self.file_pointer.seek(self.file_pointer.tell() - 1)
                 if len(buffer) > 30:
                     self.error("identifier or keyword exceeded limit")
-                family = "identifierOrKeyword"
+                family = "identifierOrKeyword"  #maybe split this to prevent keywords taken as valid identifiers
 
             elif state == "start" and head in ['{', '}', '(', ')', '[', ']', '"']:
                 buffer += head
