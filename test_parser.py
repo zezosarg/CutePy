@@ -1,4 +1,4 @@
-from parser import Parser
+from cpy_parser import Parser
 
 parser = Parser("factorial.cpy")
 
