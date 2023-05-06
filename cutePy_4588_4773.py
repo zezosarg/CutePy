@@ -4,6 +4,9 @@
 import re   # regular expressions
 import sys  # for command line arguments
 
+not_flag = 0
+hasReturn = False
+
 class Token:
 
     def __init__(self, recognized_string, family, line_number):
@@ -191,7 +194,6 @@ class Parser:
             token = self.get_token()
             # Starts with "main_" and has at least one letter or digit after
             if token.family == "identifier" and re.search("^main_[a-zA-Z0-9]+", token.recognized_string):
-                #-- CREATE NEW LEVEL 
                 symbol_table.add_level()
                 function_name = token.recognized_string
                 token = self.get_token()
@@ -207,12 +209,10 @@ class Parser:
                                 while token.recognized_string == "def":
                                     token = self.get_token()
                                     self.def_function()
-                                genQuad("begin_block", function_name, "_", "_")
-                                #first_label = nextQuad()
+                                int_code.genQuad("begin_block", function_name, "_", "_")
                                 self.statements()
-                                #symbol_table.update_fields(function_name, symbol_table.table_list[-1].offset, getQuadByLabel(first_label))
-                                genQuad("halt", "_", "_", "_")
-                                genQuad("end_block", function_name, "_", "_")
+                                int_code.genQuad("halt", "_", "_", "_")
+                                int_code.genQuad("end_block", function_name, "_", "_")
                                 write_to_file_symbol()
                                 symbol_table.remove_level()
                                 if token.recognized_string == "#}":
@@ -240,10 +240,7 @@ class Parser:
         # Does not start with "main_"
         if token.family == "identifier" and re.search("^(?!main_)", token.recognized_string):
             function_name = token.recognized_string
-            #-- CREATE RECORD IN MAIN LEVEL AND NEW LEVEL
-            #MAIN
             symbol_table.add_record(Function(function_name, None, "Integer", [], 0))
-            #NEW_LEVEL
             symbol_table.add_level()
             token = self.get_token()
             if token.recognized_string == "(":
@@ -261,16 +258,15 @@ class Parser:
                             while token.recognized_string == "def":
                                 token = self.get_token()
                                 self.def_function()
-                            genQuad("begin_block", function_name, "_", "_")
-                            first_label = nextQuad()
+                            int_code.genQuad("begin_block", function_name, "_", "_")
+                            first_label = int_code.nextQuad()
                             self.statements()
                             write_to_file_symbol()
-                            symbol_table.update_fields(function_name, symbol_table.table_list[-1].offset, getQuadByLabel(first_label), param_list)
+                            symbol_table.update_fields(function_name, symbol_table.table_list[-1].offset, int_code.getQuadByLabel(first_label), param_list)
                             if not hasReturn:
                                 self.error("Expected return statement in local function")
                             hasReturn = False
-                            genQuad("end_block", function_name, "_", "_")
-                            #write_to_file_symbol()
+                            int_code.genQuad("end_block", function_name, "_", "_")
                             symbol_table.remove_level()
                             if token.recognized_string == "#}":
                                 token = self.get_token()
@@ -319,18 +315,15 @@ class Parser:
         global hasReturn
         if token.recognized_string == "print":
             source = self.print_stat()
-            genQuad("out", source, "_", "_")
+            int_code.genQuad("out", source, "_", "_")
         elif token.recognized_string == "return":
             target = self.return_stat()
             hasReturn = True
-            genQuad("ret", "_", "_", target)
+            int_code.genQuad("ret", "_", "_", target)
         elif token.family == "identifier":
             target = token.recognized_string
             a_temp = self.assignment_stat()
-            #-- CREATE NEW RECORD FOR TEMP VARIABLE
-            #if a_temp.startswith("%"):
-            #    symbol_table.add_record(TemporaryVariable(a_temp, "Integer", symbol_table.table_list[-1].offset))
-            genQuad("=", a_temp, "_", target)
+            int_code.genQuad("=", a_temp, "_", target)
         else:
             self.error(
                 "Expected 'print', 'return' or identifier in simple_statement")
@@ -362,8 +355,8 @@ class Parser:
                                 if token.recognized_string == ")":
                                     token = self.get_token()
                                     if token.recognized_string == ";":
-                                        a_temp = newTemp()
-                                        genQuad("in", a_temp, "_", "_")
+                                        a_temp = int_code.newTemp()
+                                        int_code.genQuad("in", a_temp, "_", "_")
                                         token = self.get_token()
                                     else:
                                         self.error(
@@ -437,7 +430,7 @@ class Parser:
                 token = self.get_token()
                 if token.recognized_string == ":":
                     token = self.get_token()
-                    backpatch(c_true,nextQuad())
+                    int_code.backpatch(c_true,int_code.nextQuad())
                     if token.recognized_string == "#{":
                         token = self.get_token()
                         self.statements()
@@ -447,11 +440,11 @@ class Parser:
                             self.error("Expected '#}' in if_stat")
                     else:
                         self.statement()
-                    if_list = makeList(Quad("jump", "_", "_", "_"))
+                    if_list = int_code.makeList(Quad("jump", "_", "_", "_"))
                     # ELSE PART
                     if token.recognized_string == "else":
-                        backpatch(c_false,nextQuad()+1)
-                        genQuad("jump","_","_","_")
+                        int_code.backpatch(c_false,int_code.nextQuad()+1)
+                        int_code.genQuad("jump","_","_","_")
                         token = self.get_token()
                         if token.recognized_string == ":":
                             token = self.get_token()
@@ -464,7 +457,7 @@ class Parser:
                                     self.error("Expected '#}' in if_stat")
                             else:
                                 self.statement()
-                    backpatch(if_list, nextQuad())
+                    int_code.backpatch(if_list, int_code.nextQuad())
                 else:
                     self.error("Expected ':' in if_stat")
             else:
@@ -475,7 +468,7 @@ class Parser:
     def while_stat(self):
         global token
         token = self.get_token()
-        condQuad = nextQuad()
+        condQuad = int_code.nextQuad()
         if token.recognized_string == "(":
             token = self.get_token()
             c_arr = self.condition()
@@ -483,7 +476,7 @@ class Parser:
             c_false = c_arr[1]
             if token.recognized_string == ")":
                 token = self.get_token()
-                backpatch(c_true, nextQuad())
+                int_code.backpatch(c_true, int_code.nextQuad())
                 if token.recognized_string == ":":
                     token = self.get_token()
                     if token.recognized_string == "#{":
@@ -495,8 +488,8 @@ class Parser:
                             self.error("Expected '#}' in while_stat")
                     else:
                         self.statement()
-                    genQuad("jump", "_", "_", condQuad)
-                    backpatch(c_false, nextQuad())
+                    int_code.genQuad("jump", "_", "_", condQuad)
+                    int_code.backpatch(c_false, int_code.nextQuad())
                 else:
                     self.error("Expected ':' in while_stat")
             else:
@@ -509,13 +502,11 @@ class Parser:
         param_list = []
         if token.family == "identifier":
             param_list.append(token.recognized_string)
-            #-- CREATE NEW RECORD FOR IDENTIFIER
             token = self.get_token()
             while token.recognized_string == ",":
                 token = self.get_token()
                 if token.family == "identifier":
                     param_list.append(token.recognized_string)
-                    #-- CREATE NEW RECORD FOR IDENTIFIER
                     token = self.get_token()
                 else:
                     self.error("Expected an identifier in id_list")
@@ -532,9 +523,8 @@ class Parser:
             operator = token.recognized_string
             token = self.get_token()
             t2_place = self.term()
-            w = newTemp()
-            #symbol_table.add_record(TemporaryVariable(w, "Integer", symbol_table.table_list[-1].offset))
-            genQuad(operator, t1_place, t2_place, w)
+            w = int_code.newTemp()
+            int_code.genQuad(operator, t1_place, t2_place, w)
             t1_place = w
         return t1_place
 
@@ -545,9 +535,8 @@ class Parser:
             operator = token.recognized_string 
             token = self.get_token()
             f2_place = self.factor()
-            w = newTemp()
-            #symbol_table.add_record(TemporaryVariable(w, "Integer", symbol_table.table_list[-1].offset))
-            genQuad(operator, f1_place, f2_place, w)
+            w = int_code.newTemp()
+            int_code.genQuad(operator, f1_place, f2_place, w)
             f1_place = w
         return f1_place
 
@@ -570,7 +559,7 @@ class Parser:
             token = self.get_token()
             ret_var = self.idtail()
             if ret_var != None:
-                genQuad("call", f_place, "_", "_")
+                int_code.genQuad("call", f_place, "_", "_")
                 f_place = ret_var
         else:
             self.error(
@@ -583,7 +572,7 @@ class Parser:
         if token.recognized_string == "(":
             token = self.get_token()
             new_var = self.actual_par_list()
-            genQuad("par", new_var, "ret", "_")
+            int_code.genQuad("par", new_var, "ret", "_")
             if token.recognized_string == ")":
                 token = self.get_token()
             else:
@@ -601,8 +590,8 @@ class Parser:
             t_list.append(param2)
         for param in t_list:
              #-- CREATE RECORDS FOR FORMAL PARAMS
-            genQuad("par", param, "cv", "_")
-        return newTemp()
+            int_code.genQuad("par", param, "cv", "_")
+        return int_code.newTemp()
 
     def optional_sign(self):
         global token
@@ -620,11 +609,11 @@ class Parser:
         b_false = q1_arr[1] 
         while token.recognized_string == "or":
             token = self.get_token()
-            backpatch(b_false, nextQuad()) 
+            int_code.backpatch(b_false, int_code.nextQuad()) 
             q2_arr = self.bool_term()
             q2_true = q2_arr[0]
             q2_false = q2_arr[1]
-            b_true = mergeList(b_true, q2_true)
+            b_true = int_code.mergeList(b_true, q2_true)
             b_false = q2_false
         return [b_true, b_false]
 
@@ -635,11 +624,11 @@ class Parser:
         q_false = r1_arr[1]
         while token.recognized_string == "and":
             token = self.get_token()
-            backpatch(q_true, nextQuad())
+            int_code.backpatch(q_true, int_code.nextQuad())
             r2_arr = self.bool_factor()
             r2_true = r2_arr[0]
             r2_false = r2_arr[1]
-            q_false = mergeList(q_false, r2_false)
+            q_false = int_code.mergeList(q_false, r2_false)
             q_true = r2_true
         return [q_true, q_false]
 
@@ -682,10 +671,10 @@ class Parser:
             else:
                 self.error("Expected relational operator in bool_factor")
             e2_place = self.expression()
-            genQuad(rel_op, e1_place, e2_place, "_")
-            r_true = makeList(Quad(rel_op, e1_place, e2_place, "_"))
-            genQuad("jump", "_", "_", "_")
-            r_false = makeList(Quad("jump", "_", "_", "_"))
+            int_code.genQuad(rel_op, e1_place, e2_place, "_")
+            r_true = int_code.makeList(Quad(rel_op, e1_place, e2_place, "_"))
+            int_code.genQuad("jump", "_", "_", "_")
+            r_false = int_code.makeList(Quad("jump", "_", "_", "_"))
         return [r_true, r_false]
 
     def call_main_part(self):
@@ -743,10 +732,6 @@ class Parser:
             self.error("Expected identifier in main_function_call")
 
 # INTERMIDIATE CODE
-next_label = 0
-quads_labels_dict = {}
-cur_temp_number = 0
-
 
 class Quad:
     def __init__(self, operator, operant1, operant2, target):
@@ -766,62 +751,61 @@ class Quad:
             return True
         return False
 
-    
-def genQuad(operator, operant1, operant2, target):
-    global next_label, quads_labels_dict
-    next_quad = Quad(operator, operant1, operant2, target)
-    quads_labels_dict[next_label] = next_quad
-    next_label += 1
-    return next_quad
+class IntCode:
+    def __init__(self):
+        self.quads_labels_dict = {}
+        self.next_label = 0
+        self.cur_temp_number = 0
+
+    def genQuad(self, operator, operant1, operant2, target):
+        next_quad = Quad(operator, operant1, operant2, target)
+        self.quads_labels_dict[self.next_label] = next_quad
+        self.next_label += 1
+        return next_quad
 
 
-def nextQuad():
-    return next_label
+    def nextQuad(self):
+        return self.next_label
 
 
-def emptyList():
-    return []
+    def emptyList(self):
+        return []
 
 
-def makeList(label):
-    return [label]
+    def makeList(self, label):
+        return [label]
 
 
-def mergeList(l1, l2):
-    return l1 + l2
+    def mergeList(self, l1, l2):
+        return l1 + l2
 
 
-def newTemp():
-    global cur_temp_number
-    new_var = "%" + str(cur_temp_number)
-    cur_temp_number += 1
-    symbol_table.add_record(TemporaryVariable(new_var, "Integer", symbol_table.table_list[-1].offset))
-    return new_var
+    def newTemp(self):
+        new_var = "%" + str(self.cur_temp_number)
+        self.cur_temp_number += 1
+        symbol_table.add_record(TemporaryVariable(new_var, "Integer", symbol_table.table_list[-1].offset))
+        return new_var
 
 
-def backpatch(list, new_label):
-    global quads_labels_dict
-    for cmp_quad in list:
-        for label, quad in quads_labels_dict.items():
-            if quad.__equals__(cmp_quad):
-                quad.target = new_label
+    def backpatch(self, list, new_label):
+        for cmp_quad in list:
+            for label, quad in self.quads_labels_dict.items():
+                if quad.__equals__(cmp_quad):
+                    quad.target = new_label
 
-def getQuadByLabel(label):
-    global quads_labels_dict
-    return quads_labels_dict.get(label)
+    def getQuadByLabel(self, label):
+        return self.quads_labels_dict.get(label)
 
 def write_to_file_int():
-    global quads_labels_dict
     # Define the file path and name
     file_name = "code.int"
     # Open the file in write mode
     with open(file_name, "w") as file:
         # Write the dictionary to the file
-        for label, quad in quads_labels_dict.items():
+        for label, quad in int_code.quads_labels_dict.items():
             file.write(str(label) + ": " + quad.__str__() + "\n")
 
 def write_to_file_symbol():
-    global quads_labels_dict
     # Define the file path and name
     file_name = "symbol_table"
     # Open the file in write mode
@@ -849,6 +833,8 @@ def get_reverse_op(op):
         return ">"
     else:
         return "<"
+    
+    # SYMBOL TABLE 
 
 class Entity:
     def __init__(self, name: str):
@@ -856,7 +842,7 @@ class Entity:
 
 
 class Variable(Entity):
-    def __init__(self, name: str, datatype, offset: int):
+    def __init__(self, name, datatype, offset):
         super().__init__(name)                      
         self.datatype = datatype                    
         self.offset = offset                        
@@ -866,7 +852,7 @@ class Variable(Entity):
 
 
 class Subprogram(Entity):
-    def __init__(self, name: str, startingQuad, formalParameters: list, framelength: int):
+    def __init__(self, name, startingQuad, formalParameters, framelength):
         super().__init__(name)                      
         self.startingQuad = startingQuad            
         self.formalParameters = formalParameters    
@@ -874,7 +860,7 @@ class Subprogram(Entity):
 
 
 class Function(Subprogram):
-        def __init__(self, name: str, startingQuad, datatype, formalParameters: list, framelength: int):
+        def __init__(self, name, startingQuad, datatype, formalParameters, framelength):
             super().__init__(name, startingQuad, formalParameters, framelength)
             self.datatype = datatype
 
@@ -886,7 +872,7 @@ class Function(Subprogram):
 
 
 class FormalParameter(Entity):
-    def __init__(self, name: str, datatype, mode: str):
+    def __init__(self, name, datatype, mode):
         super().__init__(name)
         self.datatype = datatype
         self.mode = mode
@@ -896,16 +882,16 @@ class FormalParameter(Entity):
 
 
 class TemporaryVariable(Variable):
-    def __init__(self, name: str, datatype, offset: int):
+    def __init__(self, name, datatype, offset):
         super().__init__(name, datatype, offset)
 
 class Parameter(FormalParameter):
-        def __init__(self, name: str, datatype, mode: str, offset: int):
+        def __init__(self, name, datatype, mode, offset):
             super().__init__(name, datatype, mode)  # parameter's ID
             self.offset = offset
 
 class Scope:
-    def __init__(self, level: int):
+    def __init__(self, level):
         self.record_list = []
         self.level = level
         self.offset = 12
@@ -917,7 +903,6 @@ class SymbolTable:
 
     def add_record(self, record):
         self.table_list[-1].record_list.append(record)
-        # Maybe
         if not isinstance(record, Subprogram):
             self.table_list[-1].offset += 4
 
@@ -952,13 +937,10 @@ class SymbolTable:
                     return record;
         return None
 
-
-not_flag = 0
-hasReturn = False
 symbol_table = SymbolTable()
+int_code = IntCode()
 s_t = open("symbol_table", "w")
 s_t.close()
 parser = Parser(sys.argv[1])
-#parser = Parser("factorial.cpy")
 parser.syntax_analyzer()
 write_to_file_int()
