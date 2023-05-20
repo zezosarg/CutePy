@@ -457,6 +457,7 @@ class Parser:
                                     self.error("Expected '#}' in if_stat")
                             else:
                                 self.statement()
+                    int_code.backpatch(c_false,int_code.nextQuad())
                     int_code.backpatch(if_list, int_code.nextQuad())
                 else:
                     self.error("Expected ':' in if_stat")
@@ -673,8 +674,9 @@ class Parser:
             e2_place = self.expression()
             int_code.genQuad(rel_op, e1_place, e2_place, "_")
             r_true = int_code.makeList(Quad(rel_op, e1_place, e2_place, "_"))
-            int_code.genQuad("jump", "_", "_", "_")
-            r_false = int_code.makeList(Quad("jump", "_", "_", "_"))
+            nl = str(int_code.next_label)
+            int_code.genQuad("jump", "_", "_", "c_" + nl)
+            r_false = int_code.makeList(Quad("jump", "_", "_", "c_" + nl))
         return [r_true, r_false]
 
     def call_main_part(self):
@@ -821,10 +823,13 @@ def write_to_file_symbol():
         file.write("-----------------------------------------------------------------------------" + "\n")
 
 def write_to_file_final_code(instruction):
-    file_name = "final_code"
+    file_name = "final_code.asm"
     # Open the file in append mode
     with open(file_name, "a") as file:
-        file.write(instruction)
+        if instruction.startswith("L_") or instruction.startswith("."):
+            file.write(instruction + "\n")
+        else:
+            file.write("\t" + instruction + "\n")
 
 def get_reverse_op(op):
     if op == "<":
@@ -862,7 +867,7 @@ class Subprogram(Entity):
         super().__init__(name)                      
         self.startingQuad = startingQuad            
         self.formalParameters = formalParameters    
-        self.framelength = framelength              # activation record length 
+        self.framelength = framelength              
 
 
 class Function(Subprogram):
@@ -893,7 +898,7 @@ class TemporaryVariable(Variable):
 
 class Parameter(FormalParameter):
         def __init__(self, name, datatype, mode, offset):
-            super().__init__(name, datatype, mode)  # parameter's ID
+            super().__init__(name, datatype, mode)  
             self.offset = offset
 
 class Scope:
@@ -949,32 +954,32 @@ class SymbolTable:
     
 class FinalCode:
     # Search for var in ancestors
-    def gnlvcode(var):
-        record_info = symbol_table.get_record(var)
+    def gnlvcode(self, var):
+        record_info = recover_record(var)
         level_count = 0
         if record_info == None:
             parser.error("Variable " + var + " was not found in the symbol table.")
         level_count = record_info[1]
-        write_to_file_final_code("lw $t0, -4($sp)")
+        write_to_file_final_code("lw t0, -4(sp)")
         for i in range(level_count - 2, 0, -1):
-            write_to_file_final_code("lw $t0, -4($t0)")
-        write_to_file_final_code("addi $t0, $t0, " + record_info[0].offset)
+            write_to_file_final_code("lw t0, -4(t0)")
+        write_to_file_final_code("addi t0, t0, -" + str(record_info[0].offset))
 
     def loadvr(self, reg, v):
         # reg = target, v = source
-        if str(v).lstrip("-").isnumeric() and not str(v).lstrip("-").startswith("0"):
+        if str(v) == "0" or str(v).lstrip("-").isnumeric() and not str(v).lstrip("-").startswith("0"):
             write_to_file_final_code("li {target}, {integer}".format(target = reg, integer = v))
         else:
             if str(v).lstrip("-").startswith("0"):
                 parser.error("An integer should not start with 0")
-            record_info = symbol_table.get_record(v.lstrip("-"))
+            record_info = recover_record(v.lstrip("-"))
             if record_info == None:
                 parser.error("Variable " + v + " was not found in the symbol table.")
             level_count = record_info[1]
             level_found = record_info[2]
             # Global Case
             if level_found == 0:
-                write_to_file_final_code("lw {target}, -{offset}(gp)".format(target = reg, offset = record_info[0].offset))
+                write_to_file_final_code("lw {target}, -{offset}(s1)".format(target = reg, offset = record_info[0].offset))
 
             # Local Case
             elif level_count == 1 :
@@ -982,7 +987,7 @@ class FinalCode:
             # Ancestor Case
             else:
                 self.gnlvcode(v.lstrip("-"))
-                write_to_file_final_code("lw {target}, 0(t0).format(target = reg)")
+                write_to_file_final_code("lw {target}, 0(t0)".format(target = reg))
             if (v.startswith("-")):
                 write_to_file_final_code("sub {target}, zero, {target}".format(target = reg))
         
@@ -990,58 +995,72 @@ class FinalCode:
 
     def storerv(self, v, reg):
         # v = source, reg = target
-        if str(v).lstrip("-").isnumeric() and not str(v).lstrip("-").startswith("0"):
+        if str(reg) == "0" or str(reg).lstrip("-").isnumeric() and not str(reg).lstrip("-").startswith("0"):
             self.loadvr("t0", v)
             self.storerv(v, "t0")
         else:
-            if str(v).lstrip("-").startswith("0"):
+            if str(reg).lstrip("-").startswith("0"):
                 parser.error("An integer should not start with 0")
-            record_info = symbol_table.get_record(v.lstrip("-"))
+            record_info = recover_record(reg.lstrip("-"))
             if record_info == None:
-                parser.error("Variable " + v + " was not found in the symbol table.")
+                parser.error("Variable " + reg + " was not found in the symbol table.")
             level_count = record_info[1]
             level_found = record_info[2]
-            if (v.startswith("-")):
+            if (reg.startswith("-")):
                 write_to_file_final_code("sub {source}, zero, {source}".format(source = v))
             # Global Case
             if level_found == 0:
-                write_to_file_final_code("sw {source}, -{offset}(gp)".format(source = v, offset = record_info[0].offset))
+                write_to_file_final_code("sw {source}, -{offset}(s1)".format(source = v, offset = record_info[0].offset))
             # Local Case
             elif level_count == 1 :
                 write_to_file_final_code("sw {source}, -{offset}(sp)".format(source = v, offset = record_info[0].offset))
             # Ancestor Case
             else:
-                self.gnlvcode(v.lstrip("-"))
+                self.gnlvcode(reg.lstrip("-"))
                 write_to_file_final_code("sw {source}, 0(t0)".format(source = v))
             
-
 
     def generate_final_code(self):
         cur_subprogram_name = ""
         pars_count = 0
         table_pos = 0
+        is_halt = 0
+        par_flag = 0
+        write_to_file_final_code(".data\n\tbuffer: .space 4\n.text\n.globl main\nmain:")
+        write_to_file_final_code("j L_{label}".format(label = get_next_main(0)))
         for label, quad in int_code.quads_labels_dict.items():
-            write_to_file_final_code("L_" + str(label) + ":")
+            if is_halt == 0:
+                write_to_file_final_code("L_" + str(label) + ":")
             if quad.operator == "jump":
-                write_to_file_final_code("j L_" + quad.target)
+                write_to_file_final_code("j L_" + str(quad.target))
             elif quad.operator == "halt":
-                write_to_file_final_code("li a7, 10")
-                write_to_file_final_code("ecall")
+                next_main_label = get_next_main(label)
+                if next_main_label != None:
+                    write_to_file_final_code("j L_{label}".format(label = next_main_label))
+                else:
+                    write_to_file_final_code("li a7, 93")
+                    # Status code 0 indicates success
+                    write_to_file_final_code("li a0, 0")
+                    write_to_file_final_code("ecall")
+                is_halt = 1
+                table_pos = 0
             elif quad.operator == "begin_block":
                 cur_subprogram_name = quad.operant1
                 symbol_table.table_list = symbol_table.table_list_container[table_pos]
+                write_to_file_final_code("L_{function}:".format(function = cur_subprogram_name))
                 if cur_subprogram_name.startswith("main"):
                     subprogram_scope = symbol_table.table_list[0]
-                    write_to_file_final_code("L_main_{function}:".format(function = cur_subprogram_name))
                     write_to_file_final_code("addi sp, sp, {framelength}".format(framelength = subprogram_scope.offset))
-                    write_to_file_final_code("move s0, sp")
+                    write_to_file_final_code("mv s1, sp")
                 else:
-                    write_to_file_final_code("sw ra, 0(sp)")
+                    write_to_file_final_code("sw ra, -0(sp)")
             elif quad.operator == "end_block":
-                pars_count = 0
-                table_pos += 1
-                write_to_file_final_code("lw ra, 0(sp)")
-                write_to_file_final_code("jr ra")
+                if is_halt == 0:
+                    write_to_file_final_code("lw ra, -0(sp)")
+                    write_to_file_final_code("jr ra")
+                par_flag = 0
+                is_halt = 0
+                del symbol_table.table_list_container[table_pos]
             elif quad.operator == "+": 
                 self.loadvr("t1", quad.operant1)
                 self.loadvr("t2", quad.operant2)
@@ -1087,56 +1106,110 @@ class FinalCode:
                 self.loadvr("t2", quad.operant2)
                 write_to_file_final_code("bne t1, t2, L_{dest}".format(dest = quad.target))
             elif quad.operator == "in":
-                write_to_file_final_code("li a7, 63")
+                write_to_file_final_code("la a0, buffer")
+                write_to_file_final_code("li a7, 5")
                 write_to_file_final_code("ecall")
-                self.storerv("a7", quad.operant1)
+                self.storerv("a0", quad.operant1)
             elif quad.operator == "out":
                 write_to_file_final_code("li a7, 1")
-                self.loadvr("a2", quad.operant1)
+                self.loadvr("a0", quad.operant1)
                 write_to_file_final_code("ecall")
             elif quad.operator == "ret": 
                 self.loadvr("t1", quad.target)
                 write_to_file_final_code("lw t0, -8(sp)")
                 write_to_file_final_code("sw t1, 0(t0)")
+                write_to_file_final_code("j L_{end_block}".format(end_block = get_next_end_block(label)))
             elif quad.operator == "par" and quad.operant2 == "cv":
-                pars_count += 1
-                subprogram = symbol_table.get_record(cur_subprogram_name)[0]
-                write_to_file_final_code("fp, sp, {framelength}".format(framelength = subprogram.framelength))
+                callee_name = get_callee_name(label)
+                callee = recover_record(callee_name)[0]
+                if par_flag == 0:
+                    write_to_file_final_code("addi fp, sp, {framelength}".format(framelength = callee.framelength))
+                    par_flag = 1
                 self.loadvr("t0", quad.operant1)
-                self.storerv("t0, -{offset}(fp)".format(offset = 12 + (4 * pars_count)))
+                write_to_file_final_code("sw t0, -{offset}(fp)".format(offset = 12 + (4 * pars_count)))
+                pars_count += 1
             elif quad.operator == "par" and quad.operant2 == "ret":
-                subprogram = symbol_table.get_record(cur_subprogram_name)[0]
                 # Subprogram.framelength must find the new_var in symbol table
-                write_to_file_final_code("addi t0, sp, {offset}".format(subprogram.framelength))
+                ret_var = recover_record(quad.operant1)[0]
+                write_to_file_final_code("addi t0, sp, -{offset}".format(offset = ret_var.offset))
                 write_to_file_final_code("sw t0, -8(fp)")
             elif quad.operator == "call":
+                par_flag = 0
+                pars_count = 0
+                caller = recover_record(cur_subprogram_name)
+                callee = recover_record(quad.operant1)
+                caller_level = 0
+                if not cur_subprogram_name.startswith("main"):
+                    caller_level = caller[1]
+                callee_level = callee[1]
                 # Same parent case
-                caller = symbol_table.get_record(cur_subprogram_name)
-                callee = symbol_table.get_record(quad.operant1)
-                caller_level = caller[2]
-                callee_level = callee[2]
                 if caller_level == callee_level:
                     write_to_file_final_code("lw t0, -4(sp)")
                     write_to_file_final_code("sw t0, -4(fp)")
                 # Different parent case
                 else:
                     write_to_file_final_code("sw sp, -4(fp)")
-                write_to_file_final_code("addi sp, sp, {framelength}".format(framelength = caller[0].framelength))
-                write_to_file_final_code("jal {function}".format(function = callee[0].name))
-                write_to_file_final_code("addi sp, sp, {framelength}".format(framelength = - caller[0].framelength))
+                write_to_file_final_code("addi sp, sp, {framelength}".format(framelength = callee[0].framelength))
+                write_to_file_final_code("jal L_{function}".format(function = callee[0].name))
+                write_to_file_final_code("addi sp, sp, -{framelength}".format(framelength = callee[0].framelength))
             elif quad.operator == "=":
-                self.loadvr(quad.operant1, "t1")
+                self.loadvr("t1", quad.operant1)
                 self.storerv("t1", quad.target)   
-            
+
+
+def get_callee_name(current_label):
+    dict = int_code.quads_labels_dict
+    cur_quad = dict[current_label]
+    while cur_quad.operator != "call":
+        current_label += 1
+        cur_quad = dict[current_label]
+    return cur_quad.operant1
+
+def get_next_main(current_label):
+    dict = int_code.quads_labels_dict
+    dict_length = len(dict)
+    cur_quad = dict[current_label]
+    while not cur_quad.operant1.startswith("main") or not cur_quad.operator == "begin_block":
+        current_label += 1
+        if current_label == dict_length:
+            return None
+        cur_quad = dict[current_label]
+    return current_label
+
+def get_next_end_block(current_label):
+    dict = int_code.quads_labels_dict
+    dict_length = len(dict)
+    cur_quad = dict[current_label]
+    while not cur_quad.operator == "end_block":
+        current_label += 1
+        if current_label == dict_length:
+            return None
+        cur_quad = dict[current_label]
+    return current_label
+
+def recover_record(record_name):
+    table_container = symbol_table.table_list_container
+    cpy_cur_list = symbol_table.table_list.copy()
+    record = None
+    for list in table_container:
+        symbol_table.table_list = list
+        record = symbol_table.get_record(record_name)
+        if record != None:
+            symbol_table.table_list = cpy_cur_list
+            return record
+    symbol_table.table_list = cpy_cur_list
 
 
 symbol_table = SymbolTable()
 int_code = IntCode()
 s_t = open("symbol_table", "w")
 s_t.close()
+s_t = open("final_code.asm", "w")
+s_t.close()
 #parser = Parser(sys.argv[1])
-parser = Parser("test2.cpy")
+parser = Parser("tests/n_factorial.cpy")
 parser.syntax_analyzer()
 final_code = FinalCode()
 write_to_file_int()
 final_code.generate_final_code()
+
