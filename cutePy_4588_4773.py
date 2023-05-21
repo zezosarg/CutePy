@@ -4,7 +4,6 @@
 import re   # regular expressions
 import sys  # for command line arguments
 
-not_flag = 0
 hasReturn = False
 
 class Token:
@@ -634,14 +633,13 @@ class Parser:
         return [q_true, q_false]
 
     def bool_factor(self):
-        global token, not_flag
+        global token
         r_true = []
         r_false = []
         if token.recognized_string == "not":
             token = self.get_token()
             if token.recognized_string == "[":
                 token = self.get_token()
-                not_flag = 1
                 b_arr = self.condition()
                 if token.recognized_string == "]":
                     token = self.get_token()
@@ -665,9 +663,6 @@ class Parser:
             rel_op = ""
             if token.recognized_string in ["==", "<", ">", ">=", "<=", "!="]:
                 rel_op = token.recognized_string
-                if not_flag == 1:
-                    rel_op = parser.get_reverse_op(rel_op)
-                    not_flag = 0
                 token = self.get_token()
             else:
                 self.error("Expected relational operator in bool_factor")
@@ -1105,6 +1100,10 @@ class FinalCode:
                 final_code.write_to_file_final_code("li a7, 1")
                 self.loadvr("a0", quad.operant1)
                 final_code.write_to_file_final_code("ecall")
+                # print newline
+                final_code.write_to_file_final_code("li a7, 11")
+                final_code.write_to_file_final_code("li a0, '{newline}'".format(newline = "\\n"))
+                final_code.write_to_file_final_code("ecall")
             elif quad.operator == "ret": 
                 self.loadvr("t1", quad.target)
                 final_code.write_to_file_final_code("lw t0, -8(sp)")
@@ -1207,7 +1206,7 @@ s_t.close()
 s_t = open("final_code.asm", "w")
 s_t.close()
 #parser = Parser(sys.argv[1])
-parser = Parser("tests/n_factorial.cpy")
+parser = Parser("tests/test.cpy")
 parser.syntax_analyzer()
 final_code = FinalCode()
 int_code.write_to_file_int()
