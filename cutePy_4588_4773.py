@@ -728,20 +728,6 @@ class Parser:
         else:
             self.error("Expected identifier in main_function_call")
     
-    def get_reverse_op(self, op):
-        if op == "<":
-            return ">="
-        elif op == ">":
-            return "<="
-        elif op == "==":
-            return "!="
-        elif op == "!=":
-            return "=="
-        elif op == "<=":
-            return ">"
-        else:
-            return "<"
-
 # INTERMIDIATE CODE
 
 class Quad:
