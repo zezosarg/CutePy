@@ -1,4 +1,6 @@
-from cpy_lex import Lex
+import sys
+sys.path.insert(1, '../src')
+from lex import Lex
 
 lex = Lex("factorial.cpy")
 token = lex.next_token()

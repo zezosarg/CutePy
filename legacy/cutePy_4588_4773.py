@@ -1196,4 +1196,3 @@ parser.syntax_analyzer()
 final_code = FinalCode()
 int_code.write_to_file_int()
 final_code.generate_final_code()
-
