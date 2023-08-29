@@ -22,7 +22,7 @@ class Parser:
 
     def error(self, description="no description"):
         print("Error:", description, " at line:", token.line_number,
-              " token.recognized_string:", token.recognized_string)
+              " recognized string:", token.recognized_string)
         exit()
 
     def start_rule(self):

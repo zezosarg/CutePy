@@ -13,6 +13,7 @@ def main():
     s_t = open("final_code.asm", "w")
     s_t.close()
     parser = Parser(sys.argv[1], symbol_table, int_code)
+    # parser = Parser('factorial.cpy', symbol_table, int_code)
     parser.syntax_analyzer()
     final_code = FinalCode(int_code, symbol_table)
     int_code.write_to_file_int()

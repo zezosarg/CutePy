@@ -22,15 +22,15 @@ class Subprogram(Entity):
 
 
 class Function(Subprogram):
-        def __init__(self, name, startingQuad, datatype, formalParameters, framelength):
-            super().__init__(name, startingQuad, formalParameters, framelength)
-            self.datatype = datatype
+    def __init__(self, name, startingQuad, datatype, formalParameters, framelength):
+        super().__init__(name, startingQuad, formalParameters, framelength)
+        self.datatype = datatype
 
-        def __str__(self):
-            if self.framelength != 0:
-                return str(self.name) + "/" + str(self.framelength)
-            else:
-                return str(self.name)
+    def __str__(self):
+        if self.framelength != 0:
+            return str(self.name) + "/" + str(self.framelength)
+        else:
+            return str(self.name)
 
 
 class FormalParameter(Entity):
